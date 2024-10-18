@@ -10,6 +10,7 @@ const ChatList = () => {
   const [chats, setChats] = useState([]);
   const [addMode, setAddMode] = useState(false);
   const [input, setInput] = useState("");
+  const [loadingChatId, setLoadingChatId] = useState(null); // Loading state for chat
 
   const { currentUser } = useUserStore();
   const { chatId, changeChat } = useChatStore();
@@ -41,6 +42,7 @@ const ChatList = () => {
   }, [currentUser.id]);
 
   const handleSelect = async (chat) => {
+    setLoadingChatId(chat.chatId); // Set loading state
     const userChats = chats.map((item) => {
       const { user, ...rest } = item;
       return rest;
@@ -50,7 +52,9 @@ const ChatList = () => {
       (item) => item.chatId === chat.chatId
     );
 
-    userChats[chatIndex].isSeen = true;
+    if (chatIndex !== -1) {
+      userChats[chatIndex].isSeen = true;
+    }
 
     const userChatsRef = doc(db, "userchats", currentUser.id);
 
@@ -58,9 +62,11 @@ const ChatList = () => {
       await updateDoc(userChatsRef, {
         chats: userChats,
       });
-      changeChat(chat.chatId, chat.user);
+      await changeChat(chat.chatId, chat.user); // Wait for changeChat to complete
     } catch (err) {
-      console.log(err);
+      console.error("Error selecting chat: ", err);
+    } finally {
+      setLoadingChatId(null); // Reset loading state
     }
   };
 
@@ -111,9 +117,10 @@ const ChatList = () => {
             </span>
             <p>{chat.lastMessage}</p>
           </div>
+          {/* Loading indicator */}
+          {loadingChatId === chat.chatId && <span className="loading">Loading...</span>}
         </div>
       ))}
-
       {addMode && <AddUser />}
     </div>
   );

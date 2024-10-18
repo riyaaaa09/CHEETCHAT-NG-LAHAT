@@ -6,7 +6,7 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { auth, db } from "../../lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import upload from "../../lib/upload";
 
 const Login = () => {
@@ -35,7 +35,7 @@ const Login = () => {
 
     // VALIDATE INPUTS
     if (!username || !email || !password)
-      return toast.warn("Please enter inputs!");
+      return toast.warn("Please enter all fields!");
     if (!avatar.file) return toast.warn("Please upload an avatar!");
 
     // VALIDATE UNIQUE USERNAME
@@ -63,9 +63,9 @@ const Login = () => {
         chats: [],
       });
 
-      toast.success("Account created! You can login now!");
+      toast.success("Account created! You can log in now!");
     } catch (err) {
-      console.log(err);
+      console.error("Registration error:", err.code, err.message);
       toast.error(err.message);
     } finally {
       setLoading(false);
@@ -81,8 +81,9 @@ const Login = () => {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      toast.success("Logged in successfully!"); // Success message
     } catch (err) {
-      console.log(err);
+      console.error("Login error:", err.code, err.message); // Detailed error logging
       toast.error(err.message);
     } finally {
       setLoading(false);

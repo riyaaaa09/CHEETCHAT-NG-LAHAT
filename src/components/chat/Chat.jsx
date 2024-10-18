@@ -15,27 +15,31 @@ import upload from "../../lib/upload";
 import { format } from "timeago.js";
 
 const Chat = () => {
-  const [chat, setChat] = useState();
+  const [chat, setChat] = useState(null); // Initialize as null for loading state
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
-  const [img, setImg] = useState({
-    file: null,
-    url: "",
-  });
+  const [img, setImg] = useState({ file: null, url: "" });
 
   const { currentUser } = useUserStore();
-  const { chatId, user, isCurrentUserBlocked, isReceiverBlocked } =
-    useChatStore();
+  const { chatId, user, isCurrentUserBlocked, isReceiverBlocked } = useChatStore();
 
   const endRef = useRef(null);
 
   useEffect(() => {
+    // Scroll to the bottom when messages change
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chat.messages]);
+  }, [chat?.messages]);
 
   useEffect(() => {
+    if (!chatId) return; // Prevent fetching if chatId is not available
+
     const unSub = onSnapshot(doc(db, "chats", chatId), (res) => {
-      setChat(res.data());
+      if (res.exists()) {
+        setChat(res.data());
+      } else {
+        console.error("Chat does not exist!");
+        setChat(null); // Handle the case where the chat does not exist
+      }
     });
 
     return () => {
@@ -85,31 +89,30 @@ const Chat = () => {
         if (userChatsSnapshot.exists()) {
           const userChatsData = userChatsSnapshot.data();
 
-          const chatIndex = userChatsData.chats.findIndex(
-            (c) => c.chatId === chatId
-          );
+          const chatIndex = userChatsData.chats.findIndex((c) => c.chatId === chatId);
 
-          userChatsData.chats[chatIndex].lastMessage = text;
-          userChatsData.chats[chatIndex].isSeen =
-            id === currentUser.id ? true : false;
-          userChatsData.chats[chatIndex].updatedAt = Date.now();
+          if (chatIndex !== -1) {
+            userChatsData.chats[chatIndex].lastMessage = text;
+            userChatsData.chats[chatIndex].isSeen = id === currentUser.id;
+            userChatsData.chats[chatIndex].updatedAt = Date.now();
 
-          await updateDoc(userChatsRef, {
-            chats: userChatsData.chats,
-          });
+            await updateDoc(userChatsRef, {
+              chats: userChatsData.chats,
+            });
+          }
         }
       });
     } catch (err) {
       console.log(err);
-    } finally{
-    setImg({
-      file: null,
-      url: "",
-    });
-
-    setText("");
+    } finally {
+      setImg({ file: null, url: "" });
+      setText("");
     }
   };
+
+  if (!chat) {
+    return <div className="loading">Loading chat...</div>; // Loading state
+  }
 
   return (
     <div className="chat">
@@ -118,7 +121,7 @@ const Chat = () => {
           <img src={user?.avatar || "./avatar.png"} alt="" />
           <div className="texts">
             <span>{user?.username}</span>
-            <p>Lorem ipsum dolor, sit amet.</p>
+            <p>CheetChat User</p>
           </div>
         </div>
         <div className="icons">
@@ -130,11 +133,14 @@ const Chat = () => {
       <div className="center">
         {chat?.messages?.map((message) => (
           <div
-            className={
-              message.senderId === currentUser?.id ? "message own" : "message"
-            }
-            key={message?.createAt}
+            className={message.senderId === currentUser?.id ? "message own" : "message"}
+            key={message?.createdAt}
           >
+            {message.senderId === currentUser?.id ? (
+              <img src={currentUser.avatar || "./avatar.png"} alt="Your avatar" />
+            ) : (
+              <img src={user?.avatar || "./avatar.png"} alt="Chat user's avatar" />
+            )}
             <div className="texts">
               {message.img && <img src={message.img} alt="" />}
               <p>{message.text}</p>

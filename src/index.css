@@ -4,10 +4,14 @@
   box-sizing: border-box;
   font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
     "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
+
 }
 
 body {
-  background-image: url("/bg.jpg");
+  background-color: black; /* Fallback color */
+  background-image: url(https://i.pinimg.com/originals/1f/d1/9a/1fd19aeca51dffb0ea7a81add7d77d11.jpg);
+  background-size: cover; /* Cover ensures the image covers the entire area */
+  background-position: center; /* Center the image */
   display: flex;
   align-items: center;
   justify-content: center;

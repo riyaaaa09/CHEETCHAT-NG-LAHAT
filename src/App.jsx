@@ -1,13 +1,14 @@
-import { useEffect } from "react";
-import Chat from "./components/chat/Chat";
-import Detail from "./components/detail/Detail";
-import List from "./components/list/List";
-import Login from "./components/login/Login";
-import Notification from "./components/notification/Notification";
+import React, { useEffect, Suspense, lazy } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./lib/firebase";
 import { useUserStore } from "./lib/userStore";
 import { useChatStore } from "./lib/chatStore";
+
+const Chat = lazy(() => import("./components/chat/Chat"));
+const Detail = lazy(() => import("./components/detail/Detail"));
+const List = lazy(() => import("./components/list/List"));
+const Login = lazy(() => import("./components/login/Login"));
+const Notification = lazy(() => import("./components/notification/Notification"));
 
 const App = () => {
   const { currentUser, isLoading, fetchUserInfo } = useUserStore();
@@ -15,7 +16,7 @@ const App = () => {
 
   useEffect(() => {
     const unSub = onAuthStateChanged(auth, (user) => {
-      console.log("Auth state changed:", user); // Log user state
+      console.log("Auth state changed:", user);
       fetchUserInfo(user?.uid);
     });
 
@@ -28,16 +29,18 @@ const App = () => {
 
   return (
     <div className="container">
-      {currentUser ? (
-        <>
-          <List />
-          {chatId && <Chat />}
-          {chatId && <Detail />}
-        </>
-      ) : (
-        <Login />
-      )}
-      <Notification />
+      <Suspense fallback={<div>Loading component...</div>}>
+        {currentUser ? (
+          <>
+            <List />
+            {chatId && <Chat />}
+            {chatId && <Detail />}
+          </>
+        ) : (
+          <Login />
+        )}
+        <Notification />
+      </Suspense>
     </div>
   );
 };
